@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { searchGithub, searchGithubUser } from '../api/API';
 import CandObj from '../interfaces/Candidate.interface';
 import { BasicUser } from '../interfaces/Candidate.interface';
-const CandidateSearch = () => {
-  const [detailedUsers, setDetailedUsers] = useState<CandObj[]>([]);
-  const [currentIndex, setCurrentIndex] = useState<number>(0); // Track the index of the current candidate
 
-  // Fetch users and details
+const CandidateSearch = () => {
+  const [detailedUsers, setDetailedUsers] = useState<CandObj[]>([]); 
+  const [currentIndex, setCurrentIndex] = useState<number>(0); 
+  const [endOfCandidates, setEndOfCandidates] = useState<boolean>(false); 
+
+  
   useEffect(() => {
     const fetchUsers = async () => {
       const basicUsers: BasicUser[] = await searchGithub();
@@ -19,17 +21,7 @@ const CandidateSearch = () => {
     fetchUsers();
   }, []);
 
-  // Show previous candidate
-  const handlePrevious = () => {
-    setCurrentIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : detailedUsers.length - 1));
-  };
-
-  // Show next candidate
-  const handleNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex < detailedUsers.length - 1 ? prevIndex + 1 : 0));
-  };
-
-  // Save selected user to localStorage
+  
   const handleSaveUser = () => {
     const selectedUser = detailedUsers[currentIndex];
     if (selectedUser) {
@@ -39,30 +31,49 @@ const CandidateSearch = () => {
         localStorage.setItem('savedCandidates', JSON.stringify(savedUsers));
       }
     }
+    moveToNextCandidate();
+  };
+
+ 
+  const handleSkipUser = () => {
+    moveToNextCandidate();
+  };
+
+  
+  const moveToNextCandidate = () => {
+    if (currentIndex < detailedUsers.length - 1) {
+      setCurrentIndex((prevIndex) => prevIndex + 1);
+    } else {
+      setEndOfCandidates(true);
+    }
   };
 
   return (
     <div>
       <h1>Candidate Search</h1>
 
-      {/* Display only one candidate at a time */}
-      {detailedUsers.length > 0 && (
+      
+      {detailedUsers.length > 0 && !endOfCandidates && (
+        <tr>
         <div className="selected-user">
           <img src={detailedUsers[currentIndex].avatar_url} alt={detailedUsers[currentIndex].login} width={100} />
-          <p>User Name: {detailedUsers[currentIndex].login}</p>
+          <h3>User Name: {detailedUsers[currentIndex].login}</h3>
           <p>Email: {detailedUsers[currentIndex].email || 'Not Available'}</p>
           <p>Company: {detailedUsers[currentIndex].company || 'Not Available'}</p>
           <p>Location: {detailedUsers[currentIndex].location || 'Not Available'}</p>
           <p>Bio: {detailedUsers[currentIndex].bio || 'Not Available'}</p>
-          <button onClick={handleSaveUser}>Save to Favorites</button>
+          <button onClick={handleSaveUser}>+</button> 
+          <button onClick={handleSkipUser}>-</button> 
         </div>
+        </tr>
       )}
 
-      {/* Navigation buttons */}
-      <div>
-        <button onClick={handlePrevious}>Previous</button>
-        <button onClick={handleNext}>Next</button>
-      </div>
+      
+      {endOfCandidates && (
+        <div>
+          <p>No more candidates. Please refresh to see more candidates.</p>
+        </div>
+      )}
     </div>
   );
 };
